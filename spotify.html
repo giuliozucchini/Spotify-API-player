@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <title>SPOTIFY API</title>
+ <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+ <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <script type="text/javascript" src=" https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+ 
+   <style>
+
+
+	.head_p {
+	padding-left: 30px;
+
+	}
+
+	audio {
+	  padding-top: 40px;
+	  width: 500px;
+	  height: 30px;
+	  color:white;
+	  background-color: white;
+
+	}
+
+
+	.rounded { 
+		border-radius:15px; 
+		-moz-border-radius:15px; 
+		-webkit-border-radius:15px; 
+		border-width: 0px;
+	}
+
+	.trounded { 
+		border : solid 0px #ffffff;
+		border-radius : 20px;
+		moz-border-radius : 20px;
+		font-size : 16px;
+		color : #ffffff;
+		padding : 1px 10px;
+		background-color : #ff511c;
+
+	}
+
+
+	h1 {
+	 	margin-left: 30%;
+	 	margin-top: 15%;
+	    font-family: Helvetica;
+	    color: white;
+	}
+
+	a {
+		color: white;
+	}
+
+	.list {
+		margin-left: 35%;
+		color: white;
+		padding-top: 30px;
+		font-size: 12px;
+	}
+
+	input {
+		padding-left: 14px;
+	}
+
+	body {
+		   background-image: url("bob.jpg");
+		       no-repeat center center fixed; 
+		  -webkit-background-size: cover;
+		  -moz-background-size: cover;
+		  -o-background-size: cover;
+		  background-size: cover;
+		}
+
+	form {
+	 	margin-left: 35%;
+
+	}
+
+	ul {
+		font-family: Arial;
+		font-size: 10px;
+		margin-left: 20%;
+	}
+
+	ol.modal-body{
+		margin-left: 8%;
+	}
+
+
+  </style>  
+</head>
+
+<body>
+
+
+
+	<div class="search">
+		<h1>Type your artist here</h1>
+			<div> 
+				<form action="sphider/search.php" method="get"> 
+				<input type="text" name="query" class="search rounded" id="query" value=""> 
+				<input class="search_button trounded" type="submit" value="search"> 
+				</form>  
+			</div>	
+	</div>
+
+	<div class="results">
+		<ul class="list">
+		</ul>
+	</div>	
+
+	<div class="my-modal">
+		  <div class="modal-dialog">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+			         <div class="head_p">
+				           <h4 class="modal-title">THE LIST OF ALBUMS</h4>
+				           <audio class="player" autoplay controls="controls"></audio>
+					 </div>
+		      </div>
+				     <div>
+				        <ol class="modal-body">
+				        </ol>
+	    		      </div>
+		    </div><!-- /.modal-content -->
+		  </div><!-- /.modal-dialog -->
+	</div>
+
+
+<script>
+
+	$('.my-modal').hide();
+
+	$('.search_button').on('click', function(event) {
+		event.preventDefault();
+		spotifySearch();
+	});
+
+// SEARCH AND PUBLISH THE ARTISTS LIST
+	var spotifySearch= function() {
+		var searchTerm = $('input:text').val();
+		$.ajax({
+			url: 'http://api.spotify.com/v1/search?type=artist&query=' + searchTerm,
+			data:'',
+			success: function(response) {
+			printResult(response);
+			},
+			error: function() {
+				console.log('error!')
+				},
+			dataType: 'json'	
+			});
+
+		var printResult = function (response) {
+		console.log(response.artists)
+		$('.list').empty()
+			response.artists.items.forEach(function(art) {
+			console.log(art.id);
+			  var html = '<li>' + '<a data-id="' + art.id + '" href="" class="link">' + art.name + '</a>' + '</li>';
+			  $('.list').append(html);
+			});	
+		}
+
+
+// OPEN MODAL AND SHOW THE ALBUMS
+	$('.list').on('click', '.link', function(event) {
+	 event.preventDefault();
+	 $('.my-modal').show();
+	 var artistId = event.currentTarget.dataset.id;
+	 	$.ajax({
+		url: 'http://api.spotify.com/v1/artists/' + artistId +'/albums',
+		data:'',
+		success: function(response) {
+		printAlbums(response);
+		},
+		error: function() {
+			console.log('error!')
+			},
+		dataType: 'json'	
+		});
+	 });
+
+	var printAlbums = function (response) {
+		$('.modal-body').empty()
+		response.items.forEach(function(alb) {
+	    console.log(alb.name);
+		  var listofAlbums = '<li class="album" id=' + alb.id + '>' + alb.name + '</li>';
+		  $('.modal-body').append(listofAlbums);
+		});	
+	}
+
+
+
+  	$('.modal-body').on('click', '.album', function(event) {
+		event.preventDefault();
+		var albumId = event.currentTarget.id;
+		
+		$.ajax({
+		url: 'https://api.spotify.com/v1/albums/' + albumId + '/tracks',
+		data:'',
+		success: function(response) {
+		playSong(response);
+		},
+		error: function() {
+			console.log('error!')
+			},
+		dataType: 'json'
+		});
+	 });
+
+	var playSong = function (response) {
+		$('.player').empty()
+		var song = response.items[0].preview_url;
+		$('.player').attr('src', song);
+	}
+
+}	
+
+	$('.close').on('click', function(event) {
+		event.preventDefault();
+		$('.my-modal').hide();
+	});
+
+</script>
+
+</body>
+</html>
